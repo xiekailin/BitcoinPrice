@@ -199,10 +199,20 @@
             </div>
             <input type="number" id="investment" placeholder="请输入您的投资金额" min="1">
         </div>
+        <div class="form-group">
+            <label for="target-price-input">目标BTC价格 (<span id="currency-label-6">USD</span>)</label>
+            <div class="currency-toggle">
+                <button id="target-price-currency-toggle-btn" class="currency-btn">切换为 CNY</button>
+                <button id="target-price-mode-toggle-btn" class="currency-btn" style="margin-left: 10px;">使用自定义价格</button>
+            </div>
+            <div class="price-input-container">
+                <input type="number" id="target-price-input" placeholder="请输入目标价格" min="1" disabled>
+            </div>
+        </div>
+
         <div class="exchange-rate-info">
             <span class="result-label">当前USD/CNY汇率:</span>
             <span id="current-exchange-rate">7.20</span>
-
         </div>
 
         <button id="calculate-btn">计算预期收益</button>
@@ -258,7 +268,11 @@
             let TARGET_PRICE = TARGET_PRICE_USD;
             let USD_TO_CNY_RATE = 7.2; // 默认汇率
             let currentPriceCurrency = 'USD';
+            let currentInvestmentCurrency = 'USD';
+            let isCustomTargetPrice = false;
             const exchangeRateSpan = document.getElementById('current-exchange-rate');
+            const targetPriceInput = document.getElementById('target-price-input');
+            const targetPriceModeToggleBtn = document.getElementById('target-price-mode-toggle-btn');
             
             // 获取实时汇率
             async function getExchangeRate() {
@@ -290,10 +304,12 @@
                 }
             }
             targetPriceValue.textContent = TARGET_PRICE_USD.toLocaleString(); // 初始化显示默认目标价格
-            let currentInvestmentCurrency = 'USD';
+            let currentTargetPriceCurrency = 'USD';
             
             // 获取BTC历史最高价格
             async function getBTCAllTimeHigh() {
+                if (isCustomTargetPrice) return TARGET_PRICE_USD;
+                
                 const maxRetries = 3;
                 let retryCount = 0;
                 
@@ -305,9 +321,12 @@
                         
                         // Binance K线数据中的第2个元素是最高价
                         const allTimeHigh = Math.max(...data.map(kline => parseFloat(kline[2])));
-                        TARGET_PRICE_USD = allTimeHigh;
-                        TARGET_PRICE = allTimeHigh;
-                        targetPriceValue.textContent = allTimeHigh.toLocaleString();
+                        if (!isCustomTargetPrice) {
+                            TARGET_PRICE_USD = allTimeHigh;
+                            TARGET_PRICE = allTimeHigh;
+                            targetPriceValue.textContent = allTimeHigh.toLocaleString();
+                            targetPriceInput.value = allTimeHigh;
+                        }
                         return allTimeHigh;
                     } catch (error) {
                         console.error(`获取BTC历史最高价格失败 (尝试 ${retryCount + 1}/${maxRetries}):`, error);
@@ -315,6 +334,9 @@
                         
                         if (retryCount === maxRetries) {
                             console.warn('达到最大重试次数，使用默认值');
+                            if (!isCustomTargetPrice) {
+                                targetPriceInput.value = 109000;
+                            }
                             return 109000; // 如果所有重试都失败，使用默认值
                         }
                         
@@ -364,6 +386,32 @@
             // 每5分钟更新一次汇率
             setInterval(getExchangeRate, 300000);
             
+            // 目标价格模式切换功能
+            targetPriceModeToggleBtn.addEventListener('click', function() {
+                isCustomTargetPrice = !isCustomTargetPrice;
+                targetPriceInput.disabled = !isCustomTargetPrice;
+                
+                if (isCustomTargetPrice) {
+                    targetPriceModeToggleBtn.textContent = '使用历史最高价';
+                    targetPriceInput.value = TARGET_PRICE_USD;
+                } else {
+                    targetPriceModeToggleBtn.textContent = '使用自定义价格';
+                    getBTCAllTimeHigh();
+                }
+            });
+
+            // 监听目标价格输入变化
+            targetPriceInput.addEventListener('input', function() {
+                if (isCustomTargetPrice && this.value) {
+                    const inputValue = parseFloat(this.value);
+                    if (!isNaN(inputValue) && inputValue > 0) {
+                        TARGET_PRICE_USD = inputValue;
+                        TARGET_PRICE = inputValue;
+                        targetPriceValue.textContent = inputValue.toLocaleString();
+                    }
+                }
+            });
+
             // 页面加载时获取价格数据
             initializePrices();
             
@@ -443,28 +491,47 @@
                 resultDiv.style.display = 'block';
             });
             
-            // 价格货币切换功能
-            priceCurrencyToggleBtn.addEventListener('click', function() {
-                const currentPrice = document.getElementById('current-price');
-                
-                if (currentPriceCurrency === 'USD') {
-                    currentPriceCurrency = 'CNY';
-                    priceCurrencyToggleBtn.textContent = '切换为 USD';
-                    document.getElementById('currency-label').textContent = 'CNY';
+
+
+            // 目标价格货币切换功能
+            const targetPriceCurrencyToggleBtn = document.getElementById('target-price-currency-toggle-btn');
+            targetPriceCurrencyToggleBtn.addEventListener('click', function() {
+                if (currentTargetPriceCurrency === 'USD') {
+                    currentTargetPriceCurrency = 'CNY';
+                    targetPriceCurrencyToggleBtn.textContent = '切换为 USD';
+                    document.getElementById('currency-label-6').textContent = 'CNY';
                     
-                    if (currentPrice.value) {
-                        currentPrice.value = (parseFloat(currentPrice.value) * USD_TO_CNY_RATE).toFixed(2);
+                    if (isCustomTargetPrice) {
+                        const targetPriceInput = document.getElementById('target-price-input');
+                        if (targetPriceInput.value) {
+                            targetPriceInput.value = (parseFloat(targetPriceInput.value) * USD_TO_CNY_RATE).toFixed(2);
+                            TARGET_PRICE = parseFloat(targetPriceInput.value);
+                            targetPriceValue.textContent = TARGET_PRICE.toLocaleString();
+                        }
+                    } else {
+                        TARGET_PRICE = TARGET_PRICE_USD * USD_TO_CNY_RATE;
+                        targetPriceValue.textContent = TARGET_PRICE.toLocaleString();
                     }
                 } else {
-                    currentPriceCurrency = 'USD';
-                    priceCurrencyToggleBtn.textContent = '切换为 CNY';
-                    document.getElementById('currency-label').textContent = 'USD';
+                    currentTargetPriceCurrency = 'USD';
+                    targetPriceCurrencyToggleBtn.textContent = '切换为 CNY';
+                    document.getElementById('currency-label-6').textContent = 'USD';
                     
-                    if (currentPrice.value) {
-                        currentPrice.value = (parseFloat(currentPrice.value) / USD_TO_CNY_RATE).toFixed(2);
+                    if (isCustomTargetPrice) {
+                        const targetPriceInput = document.getElementById('target-price-input');
+                        if (targetPriceInput.value) {
+                            targetPriceInput.value = (parseFloat(targetPriceInput.value) / USD_TO_CNY_RATE).toFixed(2);
+                            TARGET_PRICE = parseFloat(targetPriceInput.value);
+                            targetPriceValue.textContent = TARGET_PRICE.toLocaleString();
+                        }
+                    } else {
+                        TARGET_PRICE = TARGET_PRICE_USD;
+                        targetPriceValue.textContent = TARGET_PRICE.toLocaleString();
                     }
                 }
             });
+
+
             
             // 投资金额货币切换功能
             investmentCurrencyToggleBtn.addEventListener('click', function() {
