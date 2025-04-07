@@ -179,6 +179,10 @@
                 <span class="result-label">预期收益金额:</span>
                 <span class="profit" id="profit-amount">0</span> <span id="currency-label-4">USD</span>
             </div>
+            <div class="result-item">
+                <span class="result-label">预期总金额:</span>
+                <span class="profit" id="total-amount">0</span> <span id="currency-label-5">USD</span>
+            </div>
         </div>
         
         <p class="note">注意：此计算器仅供参考，不构成投资建议。加密货币投资存在高风险，请谨慎决策。</p>
@@ -197,7 +201,8 @@
                 document.getElementById('currency-label'),
                 document.getElementById('currency-label-2'),
                 document.getElementById('currency-label-3'),
-                document.getElementById('currency-label-4')
+                document.getElementById('currency-label-4'),
+                document.getElementById('currency-label-5')
             ];
             const targetPriceValue = document.getElementById('target-price-value');
             const currentPriceInput = document.getElementById('current-price');
@@ -318,26 +323,38 @@
                 
                 // 显示结果
                 btcAmountSpan.textContent = btcAmount.toFixed(8);
-                profitPercentageSpan.textContent = profitPercentage.toFixed(2) + '%';
+                profitPercentageSpan.textContent = (profitPercentage >= 0 ? '+' : '') + profitPercentage.toLocaleString('zh-CN', { maximumFractionDigits: 2 }) + '%';
                 
                 // 根据投资货币显示收益金额和目标价格
+                const totalAmountSpan = document.getElementById('total-amount');
+                
                 if (currentInvestmentCurrency === 'CNY') {
                     // 如果显示货币是CNY，将USD的收益和目标价格转换为CNY
                     const profitCNY = profitUSD * USD_TO_CNY_RATE;
                     const targetPriceCNY = TARGET_PRICE_USD * USD_TO_CNY_RATE;
-                    profitAmountSpan.textContent = Math.abs(profitCNY).toFixed(2);
+                    const totalCNY = (investment * USD_TO_CNY_RATE) + profitCNY;
+                    
+                    profitAmountSpan.textContent = (profitCNY >= 0 ? '+' : '-') + Math.abs(profitCNY).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
                     profitAmountSpan.className = 'profit ' + (profitCNY >= 0 ? 'positive' : 'negative');
-                    if (profitCNY < 0) profitAmountSpan.textContent = '-' + profitAmountSpan.textContent;
-                    targetPriceValue.textContent = targetPriceCNY.toLocaleString();
+                    totalAmountSpan.textContent = totalCNY.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                    totalAmountSpan.className = 'profit ' + (totalCNY >= investment * USD_TO_CNY_RATE ? 'positive' : 'negative');
+                    
+                    targetPriceValue.textContent = targetPriceCNY.toLocaleString('zh-CN', { maximumFractionDigits: 2 });
                     document.getElementById('currency-label-3').textContent = 'CNY';
                     document.getElementById('currency-label-4').textContent = 'CNY';
+                    document.getElementById('currency-label-5').textContent = 'CNY';
                 } else {
-                    profitAmountSpan.textContent = Math.abs(profitUSD).toFixed(2);
+                    const totalUSD = investment + profitUSD;
+                    
+                    profitAmountSpan.textContent = (profitUSD >= 0 ? '+' : '-') + Math.abs(profitUSD).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
                     profitAmountSpan.className = 'profit ' + (profitUSD >= 0 ? 'positive' : 'negative');
-                    if (profitUSD < 0) profitAmountSpan.textContent = '-' + profitAmountSpan.textContent;
-                    targetPriceValue.textContent = TARGET_PRICE_USD.toLocaleString();
+                    totalAmountSpan.textContent = totalUSD.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                    totalAmountSpan.className = 'profit ' + (totalUSD >= investment ? 'positive' : 'negative');
+                    
+                    targetPriceValue.textContent = TARGET_PRICE_USD.toLocaleString('zh-CN', { maximumFractionDigits: 2 });
                     document.getElementById('currency-label-3').textContent = 'USD';
                     document.getElementById('currency-label-4').textContent = 'USD';
+                    document.getElementById('currency-label-5').textContent = 'USD';
                 }
                 
                 // 显示结果区域
