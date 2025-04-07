@@ -20,10 +20,23 @@
             background-color: #ffffff;
             border-radius: 16px;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-            padding: 30px;
-            width: 100%;
-            max-width: 500px;
+            padding: 20px;
+            width: 90%;
+            max-width: 600px;
             border: 1px solid #e0e0e0;
+            margin: 0 auto;
+        }
+        @media (max-width: 768px) {
+            .container {
+                width: 95%;
+                padding: 15px;
+            }
+            h1 {
+                font-size: 1.5rem;
+            }
+            input, button {
+                font-size: 14px;
+            }
         }
         h1 {
             color: #f7931a;
@@ -35,6 +48,7 @@
         }
         .form-group {
             margin-bottom: 20px;
+            position: relative;
         }
         label {
             display: block;
@@ -124,18 +138,19 @@
             text-align: center;
         }
         .currency-toggle {
-            text-align: right;
-            margin-bottom: 10px;
+            position: absolute;
+            right: 0;
+            top: 0;
         }
         .currency-btn {
             background-color: #f7931a;
             width: auto;
-            padding: 8px 16px;
+            padding: 6px 12px;
             font-size: 14px;
-            margin-left: auto;
             border-radius: 6px;
             text-transform: none;
             letter-spacing: normal;
+            margin: 0;
         }
         .currency-btn:hover {
             background-color: #e78008;
@@ -148,6 +163,15 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .price-input-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
         }
         #current-exchange-rate {
             font-weight: bold;
@@ -163,7 +187,10 @@
             <div class="currency-toggle">
                 <button id="price-currency-toggle-btn" class="currency-btn">切换为 CNY</button>
             </div>
-            <input type="number" id="current-price" value="75000" min="1">
+            <div class="price-input-container">
+                <input type="number" id="current-price" value="75000" min="1">
+
+            </div>
         </div>
         <div class="form-group">
             <label for="investment">投资金额 (<span id="currency-label-2">USD</span>)</label>
@@ -175,6 +202,7 @@
         <div class="exchange-rate-info">
             <span class="result-label">当前USD/CNY汇率:</span>
             <span id="current-exchange-rate">7.20</span>
+
         </div>
 
         <button id="calculate-btn">计算预期收益</button>
@@ -184,6 +212,7 @@
             <div class="result-item">
                 <span class="result-label">目标价格:</span>
                 <span class="target-price"><span id="target-price-value">109,000</span> <span id="currency-label-3">USD</span></span>
+
             </div>
             <div class="result-item">
                 <span class="result-label">可购买BTC数量:</span>
