@@ -324,8 +324,15 @@
                         if (!isCustomTargetPrice) {
                             TARGET_PRICE_USD = allTimeHigh;
                             TARGET_PRICE = allTimeHigh;
-                            targetPriceValue.textContent = allTimeHigh.toLocaleString();
-                            targetPriceInput.value = allTimeHigh;
+                            // 根据当前显示的货币单位更新目标价格显示
+                            if (currentTargetPriceCurrency === 'CNY') {
+                                const targetPriceCNY = allTimeHigh * USD_TO_CNY_RATE;
+                                targetPriceValue.textContent = targetPriceCNY.toLocaleString('zh-CN', { maximumFractionDigits: 2 });
+                                targetPriceInput.value = targetPriceCNY;
+                            } else {
+                                targetPriceValue.textContent = allTimeHigh.toLocaleString();
+                                targetPriceInput.value = allTimeHigh;
+                            }
                         }
                         return allTimeHigh;
                     } catch (error) {
@@ -335,7 +342,17 @@
                         if (retryCount === maxRetries) {
                             console.warn('达到最大重试次数，使用默认值');
                             if (!isCustomTargetPrice) {
-                                targetPriceInput.value = 109000;
+                                const defaultPrice = 109000;
+                                TARGET_PRICE_USD = defaultPrice;
+                                TARGET_PRICE = defaultPrice;
+                                if (currentTargetPriceCurrency === 'CNY') {
+                                    const defaultPriceCNY = defaultPrice * USD_TO_CNY_RATE;
+                                    targetPriceValue.textContent = defaultPriceCNY.toLocaleString('zh-CN', { maximumFractionDigits: 2 });
+                                    targetPriceInput.value = defaultPriceCNY;
+                                } else {
+                                    targetPriceValue.textContent = defaultPrice.toLocaleString();
+                                    targetPriceInput.value = defaultPrice;
+                                }
                             }
                             return 109000; // 如果所有重试都失败，使用默认值
                         }
@@ -390,13 +407,25 @@
             targetPriceModeToggleBtn.addEventListener('click', function() {
                 isCustomTargetPrice = !isCustomTargetPrice;
                 targetPriceInput.disabled = !isCustomTargetPrice;
+                const targetPriceCurrencyToggleBtn = document.getElementById('target-price-currency-toggle-btn');
+                targetPriceCurrencyToggleBtn.disabled = !isCustomTargetPrice;
+                targetPriceCurrencyToggleBtn.style.opacity = isCustomTargetPrice ? '1' : '0.5';
                 
                 if (isCustomTargetPrice) {
                     targetPriceModeToggleBtn.textContent = '使用历史最高价';
                     targetPriceInput.value = TARGET_PRICE_USD;
+                    targetPriceCurrencyToggleBtn.style.cursor = 'pointer';
                 } else {
                     targetPriceModeToggleBtn.textContent = '使用自定义价格';
                     getBTCAllTimeHigh();
+                    targetPriceCurrencyToggleBtn.style.cursor = 'not-allowed';
+                    // 在切换回历史最高价模式时，确保显示USD
+                    if (currentTargetPriceCurrency === 'CNY') {
+                        currentTargetPriceCurrency = 'USD';
+                        targetPriceCurrencyToggleBtn.textContent = '切换为 CNY';
+                        document.getElementById('currency-label-6').textContent = 'USD';
+                        targetPriceValue.textContent = TARGET_PRICE_USD.toLocaleString();
+                    }
                 }
             });
 
@@ -500,39 +529,67 @@
                     currentTargetPriceCurrency = 'CNY';
                     targetPriceCurrencyToggleBtn.textContent = '切换为 USD';
                     document.getElementById('currency-label-6').textContent = 'CNY';
+                    document.getElementById('currency-label-3').textContent = 'CNY';
                     
                     if (isCustomTargetPrice) {
                         const targetPriceInput = document.getElementById('target-price-input');
                         if (targetPriceInput.value) {
-                            targetPriceInput.value = (parseFloat(targetPriceInput.value) * USD_TO_CNY_RATE).toFixed(2);
-                            TARGET_PRICE = parseFloat(targetPriceInput.value);
-                            targetPriceValue.textContent = TARGET_PRICE.toLocaleString();
+                            const cnyValue = parseFloat(targetPriceInput.value) * USD_TO_CNY_RATE;
+                            targetPriceInput.value = cnyValue.toFixed(2);
+                            TARGET_PRICE = cnyValue;
+                            targetPriceValue.textContent = cnyValue.toLocaleString('zh-CN', { maximumFractionDigits: 2 });
                         }
                     } else {
-                        TARGET_PRICE = TARGET_PRICE_USD * USD_TO_CNY_RATE;
-                        targetPriceValue.textContent = TARGET_PRICE.toLocaleString();
+                        const cnyValue = TARGET_PRICE_USD * USD_TO_CNY_RATE;
+                        TARGET_PRICE = cnyValue;
+                        targetPriceValue.textContent = cnyValue.toLocaleString('zh-CN', { maximumFractionDigits: 2 });
                     }
                 } else {
                     currentTargetPriceCurrency = 'USD';
                     targetPriceCurrencyToggleBtn.textContent = '切换为 CNY';
                     document.getElementById('currency-label-6').textContent = 'USD';
+                    document.getElementById('currency-label-3').textContent = 'USD';
                     
                     if (isCustomTargetPrice) {
                         const targetPriceInput = document.getElementById('target-price-input');
                         if (targetPriceInput.value) {
-                            targetPriceInput.value = (parseFloat(targetPriceInput.value) / USD_TO_CNY_RATE).toFixed(2);
-                            TARGET_PRICE = parseFloat(targetPriceInput.value);
-                            targetPriceValue.textContent = TARGET_PRICE.toLocaleString();
+                            const usdValue = parseFloat(targetPriceInput.value) / USD_TO_CNY_RATE;
+                            targetPriceInput.value = usdValue.toFixed(2);
+                            TARGET_PRICE = usdValue;
+                            targetPriceValue.textContent = usdValue.toLocaleString('zh-CN', { maximumFractionDigits: 2 });
                         }
                     } else {
                         TARGET_PRICE = TARGET_PRICE_USD;
-                        targetPriceValue.textContent = TARGET_PRICE.toLocaleString();
+                        targetPriceValue.textContent = TARGET_PRICE_USD.toLocaleString('zh-CN', { maximumFractionDigits: 2 });
                     }
                 }
             });
 
 
             
+            // 当前BTC价格货币切换功能
+            priceCurrencyToggleBtn.addEventListener('click', function() {
+                const currentPrice = document.getElementById('current-price');
+                
+                if (currentPriceCurrency === 'USD') {
+                    currentPriceCurrency = 'CNY';
+                    priceCurrencyToggleBtn.textContent = '切换为 USD';
+                    document.getElementById('currency-label').textContent = 'CNY';
+                    
+                    if (currentPrice.value) {
+                        currentPrice.value = (parseFloat(currentPrice.value) * USD_TO_CNY_RATE).toFixed(2);
+                    }
+                } else {
+                    currentPriceCurrency = 'USD';
+                    priceCurrencyToggleBtn.textContent = '切换为 CNY';
+                    document.getElementById('currency-label').textContent = 'USD';
+                    
+                    if (currentPrice.value) {
+                        currentPrice.value = (parseFloat(currentPrice.value) / USD_TO_CNY_RATE).toFixed(2);
+                    }
+                }
+            });
+
             // 投资金额货币切换功能
             investmentCurrencyToggleBtn.addEventListener('click', function() {
                 const investment = document.getElementById('investment');
