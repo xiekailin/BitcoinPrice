@@ -37,6 +37,16 @@
             input, button {
                 font-size: 14px;
             }
+            .currency-toggle {
+                position: static;
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+                margin-top: 8px;
+            }
+            .currency-btn {
+                width: 100%;
+            }
         }
         h1 {
             color: #f7931a;
@@ -306,6 +316,12 @@
             targetPriceValue.textContent = TARGET_PRICE_USD.toLocaleString(); // 初始化显示默认目标价格
             let currentTargetPriceCurrency = 'USD';
             
+            // 初始化时禁用目标价格货币切换按钮
+            const targetPriceCurrencyToggleBtn = document.getElementById('target-price-currency-toggle-btn');
+            targetPriceCurrencyToggleBtn.disabled = true;
+            targetPriceCurrencyToggleBtn.style.opacity = '0.5';
+            targetPriceCurrencyToggleBtn.style.cursor = 'not-allowed';
+            
             // 获取BTC历史最高价格
             async function getBTCAllTimeHigh() {
                 if (isCustomTargetPrice) return TARGET_PRICE_USD;
@@ -324,15 +340,13 @@
                         if (!isCustomTargetPrice) {
                             TARGET_PRICE_USD = allTimeHigh;
                             TARGET_PRICE = allTimeHigh;
-                            // 根据当前显示的货币单位更新目标价格显示
-                            if (currentTargetPriceCurrency === 'CNY') {
-                                const targetPriceCNY = allTimeHigh * USD_TO_CNY_RATE;
-                                targetPriceValue.textContent = targetPriceCNY.toLocaleString('zh-CN', { maximumFractionDigits: 2 });
-                                targetPriceInput.value = targetPriceCNY;
-                            } else {
-                                targetPriceValue.textContent = allTimeHigh.toLocaleString();
-                                targetPriceInput.value = allTimeHigh;
-                            }
+                            // 历史最高价模式下始终显示USD
+                            targetPriceValue.textContent = allTimeHigh.toLocaleString();
+                            targetPriceInput.value = allTimeHigh;
+                            // 确保显示USD
+                            currentTargetPriceCurrency = 'USD';
+                            document.getElementById('currency-label-6').textContent = 'USD';
+                            targetPriceCurrencyToggleBtn.textContent = '切换为 CNY';
                         }
                         return allTimeHigh;
                     } catch (error) {
@@ -407,7 +421,6 @@
             targetPriceModeToggleBtn.addEventListener('click', function() {
                 isCustomTargetPrice = !isCustomTargetPrice;
                 targetPriceInput.disabled = !isCustomTargetPrice;
-                const targetPriceCurrencyToggleBtn = document.getElementById('target-price-currency-toggle-btn');
                 targetPriceCurrencyToggleBtn.disabled = !isCustomTargetPrice;
                 targetPriceCurrencyToggleBtn.style.opacity = isCustomTargetPrice ? '1' : '0.5';
                 
@@ -523,24 +536,19 @@
 
 
             // 目标价格货币切换功能
-            const targetPriceCurrencyToggleBtn = document.getElementById('target-price-currency-toggle-btn');
             targetPriceCurrencyToggleBtn.addEventListener('click', function() {
+                if (!isCustomTargetPrice) return; // 在历史最高价模式下禁用货币切换
+                
                 if (currentTargetPriceCurrency === 'USD') {
                     currentTargetPriceCurrency = 'CNY';
                     targetPriceCurrencyToggleBtn.textContent = '切换为 USD';
                     document.getElementById('currency-label-6').textContent = 'CNY';
                     document.getElementById('currency-label-3').textContent = 'CNY';
                     
-                    if (isCustomTargetPrice) {
-                        const targetPriceInput = document.getElementById('target-price-input');
-                        if (targetPriceInput.value) {
-                            const cnyValue = parseFloat(targetPriceInput.value) * USD_TO_CNY_RATE;
-                            targetPriceInput.value = cnyValue.toFixed(2);
-                            TARGET_PRICE = cnyValue;
-                            targetPriceValue.textContent = cnyValue.toLocaleString('zh-CN', { maximumFractionDigits: 2 });
-                        }
-                    } else {
-                        const cnyValue = TARGET_PRICE_USD * USD_TO_CNY_RATE;
+                    const targetPriceInput = document.getElementById('target-price-input');
+                    if (targetPriceInput.value) {
+                        const cnyValue = parseFloat(targetPriceInput.value) * USD_TO_CNY_RATE;
+                        targetPriceInput.value = cnyValue.toFixed(2);
                         TARGET_PRICE = cnyValue;
                         targetPriceValue.textContent = cnyValue.toLocaleString('zh-CN', { maximumFractionDigits: 2 });
                     }
@@ -550,17 +558,12 @@
                     document.getElementById('currency-label-6').textContent = 'USD';
                     document.getElementById('currency-label-3').textContent = 'USD';
                     
-                    if (isCustomTargetPrice) {
-                        const targetPriceInput = document.getElementById('target-price-input');
-                        if (targetPriceInput.value) {
-                            const usdValue = parseFloat(targetPriceInput.value) / USD_TO_CNY_RATE;
-                            targetPriceInput.value = usdValue.toFixed(2);
-                            TARGET_PRICE = usdValue;
-                            targetPriceValue.textContent = usdValue.toLocaleString('zh-CN', { maximumFractionDigits: 2 });
-                        }
-                    } else {
-                        TARGET_PRICE = TARGET_PRICE_USD;
-                        targetPriceValue.textContent = TARGET_PRICE_USD.toLocaleString('zh-CN', { maximumFractionDigits: 2 });
+                    const targetPriceInput = document.getElementById('target-price-input');
+                    if (targetPriceInput.value) {
+                        const usdValue = parseFloat(targetPriceInput.value) / USD_TO_CNY_RATE;
+                        targetPriceInput.value = usdValue.toFixed(2);
+                        TARGET_PRICE = usdValue;
+                        targetPriceValue.textContent = usdValue.toLocaleString('zh-CN', { maximumFractionDigits: 2 });
                     }
                 }
             });
